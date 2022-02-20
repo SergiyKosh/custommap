@@ -6,17 +6,21 @@ import java.util.*;
 
 @SuppressWarnings("all")
 public class ImplCustomMap<K, V> implements CustomMap<K, V> {
-    private static final float DEFAULT_LOAD_FACTOR = 0.75F;
-    private static final int TREEIFY_THRESHOLD = 8;
-    private static final int DEFAULT_MAP_SIZE = 16;
+    private final float DEFAULT_LOAD_FACTOR = 0.75F;
+    private final int TREEIFY_THRESHOLD = 8;
+    private final int DEFAULT_MAP_SIZE = 16;
+    private int capacity;
     private Node<K, V>[] table;
     private final Set<Node<K, V>> entrySet;
     private final Set<K> keySet;
+    private final Collection<V> values;
 
     public ImplCustomMap() {
         table = new Node[DEFAULT_MAP_SIZE];
         entrySet = new HashSet<>();
         keySet = new HashSet<>();
+        values = new ArrayList<>();
+        capacity = 0;
     }
 
     private int getIndex(K key) {
@@ -26,15 +30,23 @@ public class ImplCustomMap<K, V> implements CustomMap<K, V> {
 
     @Override
     public V put(K key, V value) {
+        if (capacity == DEFAULT_LOAD_FACTOR * table.length) {
+            table = Arrays.copyOf(table, table.length * 2);
+        }
+
         int index = getIndex(key);
+
         if (index < table.length) {
             if (table[index] == null) {
                 table[index] = new Node(key.hashCode(), key, value, null);
                 entrySet.add(table[index]);
                 keySet.add(key);
+                values.add(value);
+                ++capacity;
             }
             return value;
         }
+
         return null;
     }
 
@@ -58,12 +70,12 @@ public class ImplCustomMap<K, V> implements CustomMap<K, V> {
 
     @Override
     public Collection<V> values() {
-        return null;
+        return values;
     }
 
     @Override
     public int size() {
-        return table.length;
+        return capacity;
     }
 
     @Override
@@ -73,12 +85,16 @@ public class ImplCustomMap<K, V> implements CustomMap<K, V> {
 
     @Override
     public boolean containsKey(K key) {
-        return Arrays.stream(table).anyMatch(node -> node.key.equals(key));
+        return Arrays.stream(table)
+                .filter(node -> node != null)
+                .anyMatch(node -> node.key.equals(key));
     }
 
     @Override
     public boolean containsValue(V value) {
-        return Arrays.stream(table).anyMatch(node -> node.value.equals(value));
+        return Arrays.stream(table)
+                .filter(node -> node != null)
+                .anyMatch(node -> node.value.equals(value));
     }
 
     static class Node<K, V> {
