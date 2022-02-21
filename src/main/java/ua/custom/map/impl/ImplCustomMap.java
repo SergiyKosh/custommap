@@ -14,6 +14,7 @@ public class ImplCustomMap<K, V> implements CustomMap<K, V> {
     private final Set<Node<K, V>> entrySet;
     private final Set<K> keySet;
     private final Collection<V> values;
+    private final Node<K, V> defaultNode;
 
     public ImplCustomMap() {
         table = new Node[DEFAULT_MAP_SIZE];
@@ -21,12 +22,32 @@ public class ImplCustomMap<K, V> implements CustomMap<K, V> {
         keySet = new HashSet<>();
         values = new ArrayList<>();
         capacity = 0;
+        defaultNode = new Node<>();
+    }
+
+    private Node<K, V> findNode(K key) {
+        return Arrays.stream(table)
+                .filter(Objects::nonNull)
+                .filter(node -> node.getKey() != null)
+                .filter(node -> node.getKey().equals(key))
+                .findFirst()
+                .orElse(defaultNode);
+    }
+
+    private int getIndexForGetOrRemove(K key) {
+        Node<K, V> node = findNode(key);
+        if (node.getKey() == null) {
+            return -1;
+        }
+        int n = table.length;
+        return key.hashCode() & (n - 1);
     }
 
     private int getIndex(K key) {
         int n = table.length;
         return key.hashCode() & (n - 1);
     }
+
 
     @Override
     public V put(K key, V value) {
@@ -36,7 +57,7 @@ public class ImplCustomMap<K, V> implements CustomMap<K, V> {
 
         int index = getIndex(key);
 
-        if (index < table.length) {
+        if (index > -1 && index < table.length) {
             if (table[index] == null) {
                 table[index] = new Node(key.hashCode(), key, value, null);
                 entrySet.add(table[index]);
@@ -52,11 +73,22 @@ public class ImplCustomMap<K, V> implements CustomMap<K, V> {
 
     @Override
     public V get(K key) {
-        int index = getIndex(key);
-        if (index < table.length) {
+        int index = getIndexForGetOrRemove(key);
+        if (index > -1 && index < table.length) {
             return table[index].value;
         }
         return null;
+    }
+
+    @Override
+    public void remove(K key) {
+        int index = getIndexForGetOrRemove(key);
+        if (index > -1 && index < table.length) {
+            table[index].key = null;
+            table[index].value = null;
+        } else {
+            throw new RuntimeException("Key index out of bounds!");
+        }
     }
 
     @Override
@@ -97,11 +129,23 @@ public class ImplCustomMap<K, V> implements CustomMap<K, V> {
                 .anyMatch(node -> node.value.equals(value));
     }
 
-    static class Node<K, V> {
-        final int hash;
-        final K key;
+    @Override
+    public String toString() {
+        return Arrays.toString(Arrays.stream(table)
+                .filter(Objects::nonNull)
+                .filter(node -> node.key != null)
+                .toArray()
+        );
+    }
+
+    public static class Node<K, V> {
+        int hash;
+        K key;
         V value;
         ImplCustomMap.Node<K, V> next;
+
+        Node() {
+        }
 
         Node(int hash, K key, V value, ImplCustomMap.Node<K, V> next) {
             this.hash = hash;

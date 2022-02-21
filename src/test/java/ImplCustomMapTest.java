@@ -26,4 +26,13 @@ public class ImplCustomMapTest {
         assertEquals(1, map.keySet().size());
         assertNotNull(map.get("Test"));
     }
+
+    @Test
+    void removeTest() {
+        ImplCustomMap<String, String> map = new ImplCustomMap<>();
+        map.put("Test", "Test");
+        map.remove("Test");
+        String resultValue = map.get("Text");
+        assertNull(resultValue);
+    }
 }

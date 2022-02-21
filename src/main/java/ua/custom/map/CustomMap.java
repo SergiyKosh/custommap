@@ -7,6 +7,7 @@ import java.util.Set;
 public interface CustomMap<K, V> {
     V put(K key, V value);
     V get(K key);
+    void remove(K key);
     Set<K> keySet();
     Collection<V> values();
     int size();
